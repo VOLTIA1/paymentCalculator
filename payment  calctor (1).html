@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Calculator</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    body {
+      background-color: #121212;
+      color: gold;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 30px auto;
+    }
+
+    .payment-methods {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .method {
+      background-color: #1e1e1e;
+      border: 1px solid gold;
+      border-radius: 10px;
+      padding: 10px;
+      width: 115px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .method:hover,
+    .method.active {
+      background-color: gold;
+      color: black;
+    }
+
+    .method-icon i {
+      font-size: 24px;
+    }
+
+    .results {
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid gold;
+      margin-top: 30px;
+    }
+
+    .results h5 {
+      margin-bottom: 10px;
+    }
+
+    button.copy-btn {
+      background-color: transparent;
+      border: 1px solid gold;
+      color: gold;
+      padding: 5px 10px;
+      border-radius: 5px;
+      margin-left: 10px;
+    }
+
+    input.form-control {
+      background-color: #1e1e1e;
+      color: gold;
+      border: 1px solid gold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="text-center mb-4">Payment Calculator</h2>
+
+    <div class="form-group">
+      <label for="orderprice">Order Price ($):</label>
+      <input type="number" class="form-control" id="orderprice" placeholder="Enter order price">
+    </div>
+
+    <div class="payment-methods" id="paymentList">
+      <!-- Payment Methods will be inserted here -->
+    </div>
+
+    <div class="results">
+      <h5>Total Price: <span class="totalprice">0$</span></h5>
+      <h5>Customer Fees: <span class="customerfees">0$</span></h5>
+      <h5>Method Address: <span class="address">N/A</span> <button class="copy-btn" id="copyAccount">Copy</button></h5>
+      <h5>Method Requirements: <span class="req">N/A</span> <button class="copy-btn" id="copyReq">Copy</button></h5>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+const paymentMethods = [
+      { name: "Crypto", fee: 0.03, req: "None", icon: "fab fa-bitcoin" },
+      { name: "E-transfer", fee: 0.155, req: "None", icon: "fas fa-exchange-alt" },
+      { name: "Wire transfer", fee: 0.155, req: "None", icon: "fas fa-university" },
+      { name: "Cash App", fee: 0.155, req: "need", icon: "fas fa-dollar-sign" },
+      { name: "Apple Pay", fee: 0.155, req: "None", icon: "fab fa-apple" },
+      { name: "Zelle", fee: 0.155, req: "None", icon: "fas fa-money-check" },
+      { name: "Wealthsimple", fee: 0.155, req: "None", icon: "fas fa-piggy-bank" },
+      { name: "Wise", fee: 0.17, req: "None", icon: "fas fa-globe" },
+      { name: "Revolut", fee: 0.17, req: "None", icon: "fas fa-sync" },
+      { name: "Chime", fee: 0.17, req: "need", icon: "fas fa-building-columns" },
+      { name: "MetaPay", fee: 0.17, req: "None", icon: "fab fa-facebook" },
+      { name: "Venmo", fee: 0.17, req: "need", icon: "fas fa-hand-holding-usd" },
+      { name: "PayPal", fee: 0.17, req: "need", icon: "fab fa-paypal" },
+];
+    function renderMethods() {
+      const list = $("#paymentList");
+      list.empty();
+      paymentMethods.forEach((method, i) => {
+        list.append(`
+          <div class="method" data-index="${i}">
+            <div class="method-icon"><i class="${method.icon}"></i></div>
+            <div class="method-name">${method.name}</div>
+            <div class="method-fee">${(method.fee * 100).toFixed(1)}% fee</div>
+          </div>
+        `);
+      });
+    }
+
+    function updateResults(method, price) {
+      const customerFees = price * method.fee * (1 + method.fee);
+      const totalPrice = customerFees + price;
+      const formattedReq = method.req === "need"
+        ? `1. Full picture of the ID.<br>2. Selfie with the ID.<br>3. Picture of ID with a paper saying: 'I am buying [#ServiceName] from [#ServerName]'.<br>4. Name on account must match ID.<br>5. Send from balance only.`
+        : "The money must be sent from your balance (not from a bank or credit card).";
+
+      $(".customerfees").html(price ? customerFees.toFixed(2) + "$" : "0$");
+      $(".totalprice").html(price ? totalPrice.toFixed(2) + "$" : "0$");
+      $(".address").text(method.account);
+      $(".req").html(formattedReq);
+    }
+
+    $(document).ready(function () {
+      renderMethods();
+
+      let selectedIndex = null;
+
+      $("#paymentList").on("click", ".method", function () {
+        $(".method").removeClass("active");
+        $(this).addClass("active");
+        selectedIndex = $(this).data("index");
+        const price = parseFloat($("#orderprice").val()) || 0;
+        updateResults(paymentMethods[selectedIndex], price);
+      });
+
+      $("#orderprice").on("input", function () {
+        const price = parseFloat($(this).val()) || 0;
+        if (selectedIndex !== null) {
+          updateResults(paymentMethods[selectedIndex], price);
+        } else {
+          $(".customerfees").text("0$");
+          $(".totalprice").text("0$");
+        }
+      });
+
+      function handleCopy(selector, buttonId) {
+        const btn = $(buttonId);
+        const content = $(selector).text().replace(/<br\s*\/?>/gi, "\n");
+        navigator.clipboard.writeText(content).then(() => {
+          const original = btn.text();
+          btn.text("Copied!");
+          setTimeout(() => btn.text(original), 1500);
+        });
+      }
+
+      $("#copyAccount").click(() => handleCopy(".address", "#copyAccount"));
+      $("#copyReq").click(() => handleCopy(".req", "#copyReq"));
+    });
+  </script>
+</body>
+</html>
